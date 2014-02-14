@@ -3,8 +3,12 @@
 namespace artgun;
 
 use artgun\Order;
+use artgun\Address;
+use artgun\Item;
 
 include_once __DIR__ . '/Order.php';
+include_once __DIR__ . '/Address.php';
+include_once __DIR__ . '/Item.php';
 
 class ArtGun {
 
@@ -29,46 +33,117 @@ class ArtGun {
    */
   private $secret;
 
+  /**
+   * The shipping provider. e.g. UPS, DHL, etc.
+   *
+   * @var string
+   */
+  private $shipping_carrier;
+
+  /**
+   * The shipping priority. e.g. Express, 2Day, etc.
+   *
+   * @var string
+   */
+  private $shipping_priority;
+
+  /**
+   * Account number associated with your company's shipping provider.
+   *
+   * @var string
+   */
+  private $shipping_account;
+
+  /**
+   * Controls if the api is operating in production or debug mode.
+   *
+   * @var string
+   */
+  public $mode;
+
   public function __construct($config) {
-    $this->url    = $config['URL'];
-    $this->apikey = $config['APIKEY'];
-    $this->secret = $config['SECRET'];
+    $this->url               = $config['URL'];
+    $this->apikey            = $config['APIKEY'];
+    $this->secret            = $config['SECRET'];
+    $this->shipping_account  = $config['SHIPPING_ACCOUNT'];
+    $this->shipping_carrier  = $config['SHIPPING_CARRIER'];
+    $this->shipping_priority = $config['SHIPPING_PRIORITY'];
+    if ($config['MODE'] == 'auto') $this->mode = $config['MODE'];
+    else $this->mode = 'debug';
   }
 
-  public function sendOrder(Order $order, $xid, $environment, $shipping_carrier_or_account, $shipping_priority = NULL) {
-    $data = array(
-      'time'              => date_format(date_create(), DATE_RFC822),
-      // status 'debug' or 'in production'
-      "status"            => $environment,
-      // shipping info
-      "shipping_name"     => $order->address->shipping_name,
-      "shipping_state"    => $order->address->shipping_state,
-      "shipping_city"     => $order->address->shipping_city,
-      "shipping_country"  => $order->address->shipping_country,
-      "shipping_address1" => $order->address->shipping_address1,
-      "shipping_address2" => $order->address->shipping_address2,
-      "shipping_Zipcode"  => $order->address->shipping_Zipcode,
-      "shipping_phone"    => '4159999999', // TODO:: find out if needed
-      // 6 for sending order
-      "status_code"       => "6",
-      "items_quantity"    => $order->items_quantity,
-      "items"             => $order->items,
-      // must be unique
-      "xid"               => $xid,
-      "mode"              => "auto",
-      "type"              => "ORDER",
-      "method"            => "create"
-    );
+  public static function Order($xid) {
+    return new Order($xid);
+  }
 
-    if ($shipping_priority) {
-      $data["shipping_carrier"]  = $shipping_carrier_or_account;
-      $data["shipping_priority"] = $shipping_priority;
-    }
-    else {
-      $data["shipping_account"] = $shipping_carrier_or_account;
-    }
+  public static function Address($country, $name, $address1, $address2, $city, $state, $zipcode) {
+    return new Address($country, $name, $address1, $address2, $city, $state, $zipcode);
+  }
 
+  public static function Item($sku, $quantity = 1) {
+    return new Item($sku, $quantity);
+  }
+
+  public function sendOrder($order) {
+    $data = $this->getBaseData($order->xid);
+    // status 'debug' or 'in production'
+    $data['status']            = 'In Production';
+    // 6 for sending order
+    $data['status_code']       = '6';
+    $data['method']            = 'create';
+    // shipping info
+    $data['shipping_carrier']  = $this->shipping_carrier;
+    $data['shipping_priority'] = $this->shipping_priority;
+    $data['shipping_account']  = $this->shipping_account;
+    // shipping address info
+    if (!empty($order->shipping_address)) {
+      $data['shipping_name']     = $order->shipping_address->name;
+      $data['shipping_state']    = $order->shipping_address->state;
+      $data['shipping_city']     = $order->shipping_address->city;
+      $data['shipping_country']  = $order->shipping_address->country;
+      $data['shipping_address1'] = $order->shipping_address->address1;
+      $data['shipping_address2'] = $order->shipping_address->address2;
+      $data['shipping_Zipcode']  = $order->shipping_address->zipcode;
+    }
+    // billing info
+    if (!empty($order->billing_address)) {
+      $data['billing_name'] = $order->billing_address->name;
+      $data['billing_address1'] = $order->billing_address->address1;
+      $data['billing_address2'] = $order->billing_address->address2;
+      $data['billing_city'] = $order->billing_address->city;
+      $data['billing_state'] = $order->billing_address->state;
+      $data['billing_country'] = $order->billing_address->country;
+      $data['billing_Zipcode'] = $order->billing_address->zipcode;
+    }
+    $data['items_quantity']    = $order->items_quantity;
+    $data['items']             = $order->items;
+
+    // may be temporary
+    $data['shipping_phone'] = '44444444444';
     return $this->call($data);
+  }
+  
+  public function cancelOrder($xid, $notes = null, $incident = null) {
+    $data = $this->getBaseData($xid);
+    // status 'debug' or 'in production'
+    $data['status']      = 'Cancelled';
+    // 6 for sending order
+    $data['status_code'] = '7';
+    $data['method']      = 'update';
+    
+    $data['notes']       = $notes;
+    $data['incident']    = $incident;
+    
+    return $this->call($data);
+  }
+  
+  protected function getBaseData($xid) {
+    $data = array();
+    $data['type'] = 'ORDER';
+    $data['xid']  = $xid;
+    $data['mode'] = $this->mode;
+    $data['time'] = date_format(date_create(), DATE_RFC822);
+    return $data;
   }
 
   public function call($data) {

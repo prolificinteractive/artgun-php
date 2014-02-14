@@ -27,34 +27,42 @@ class Order {
    *
    * @var Address;
    */
-  public $address;
+  public $shipping_address;
 
-  public function setAddress($shipping_country, $shipping_name, $shipping_address1,
-                             $shipping_address2, $shipping_city, $shipping_state, $shipping_Zipcode) {
+  /**
+   * Address the order is to be billed to.
+   *
+   * @var Address;
+   */
+  public $billing_address;
 
-    $this->address = new Address($shipping_country, $shipping_name, $shipping_address1,
-      $shipping_address2, $shipping_city, $shipping_state, $shipping_Zipcode);
+  /**
+   * UID for the order.
+   *
+   * @var string
+   */
+  public $xid;
+
+
+  public function __construct($xid) {
+    $this->xid = $xid;
   }
 
-  public function addItem($sku, $thumbnail_url, $preview_url, $print_url, $quantity) {
+
+  public function setShippingAddress($address) {
+    $this->shipping_address = $address;
+  }
+
+  public function setBillingAddress($address) {
+    $this->billing_address = $address;
+  }
+
+  public function addItem($item) {
     $this->items[] = array(
-      "sku"        => $sku,
-      "attributes" => array(
-        array(
-          "file_extension" => "png",
-          "file_url"       => $print_url,
-          "preview_url"    => $preview_url,
-          // File_hash is optional and may be used at some point
-          // the required hashing algorithm is still unknown presently
-          // if used the print file name will probably change
-          // from "mongoId".png to "file_hash".png
-          //"file_hash" => "9AF7DF930C28074C28883E2C1B435C42",
-          "thumbnail_url"  => $thumbnail_url,
-          "location"       => "CF"
-        ),
-      ),
-      "quantity"   => $quantity
+      "sku"        => $item->sku,
+      "attributes" => $item->attributes,
+      "quantity"   => $item->quantity
     );
-    $this->items_quantity += $quantity;
+    $this->items_quantity += $item->quantity;
   }
 }
