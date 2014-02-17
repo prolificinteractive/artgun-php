@@ -65,6 +65,6 @@ class Address {
   }
   
   protected function sanitize($str) {
-    return strtoupper(preg_replace("/[^a-z0-9.]+/i", "", $str));
+    return strtoupper(preg_replace("/[^a-z0-9\ ]+/i", "", $str));
   }
 }
