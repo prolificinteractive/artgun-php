@@ -84,7 +84,7 @@ class ArtGun {
     return new Item($sku, $quantity);
   }
 
-  public function sendOrder($order) {
+  public function sendOrder($order, $phoneNumber, $email = '') {
     $data = $this->getBaseData($order->xid);
     // status 'debug' or 'in production'
     $data['status']            = 'In Production';
@@ -119,7 +119,8 @@ class ArtGun {
     $data['items']             = $order->items;
 
     // may be temporary
-    $data['shipping_phone'] = '44444444444';
+    $data['shipping_phone'] = $phoneNumber;
+    $data['shipping_email'] = $email;
     return $this->call($data);
   }
   
@@ -155,14 +156,12 @@ class ArtGun {
       'data'      => $jsonData,
       'signature' => $this->getSignature($jsonData)
     );
-
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $this->url);
     curl_setopt($ch, CURLOPT_POST, count($fields));
     curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     $response = curl_exec($ch);
-
     return json_decode($response);
   }
 

@@ -33,7 +33,7 @@ class Item {
 
 
   public function addAttribute($thumbnail_url, $preview_url, $file_url,
-                               $file_extension, $location = 'CF', $type = 'HeatTransfer') {
+                               $file_extension, $location = 'CF', $type = 'DigitalPrint') {
     $this->attributes[] = array(
       "type"           => $type,
       "location"       => $location,
