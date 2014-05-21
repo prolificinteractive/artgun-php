@@ -2,10 +2,6 @@
 
 namespace artgun;
 
-use artgun\Order;
-use artgun\Address;
-use artgun\Item;
-
 include_once __DIR__ . '/Order.php';
 include_once __DIR__ . '/Address.php';
 include_once __DIR__ . '/Item.php';
@@ -150,7 +146,7 @@ class ArtGun {
   public function call($data) {
 
     $jsonData = json_encode($data);
-
+    
     $fields = array(
       'key'       => $this->apikey,
       'data'      => $jsonData,
